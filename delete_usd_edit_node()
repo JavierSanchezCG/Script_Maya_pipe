@@ -1,0 +1,17 @@
+import maya.cmds as cmds
+
+# Función para eliminar el nodo 'usdEditAsMaya'
+def delete_usd_edit_node():
+    # Verificar si el nodo 'usdEditAsMaya' existe
+    if cmds.objExists('usdEditAsMaya'):
+        # Desbloquear el nodo si está bloqueado
+        cmds.lockNode('usdEditAsMaya', lock=False)
+        
+        # Eliminar el nodo
+        cmds.delete('usdEditAsMaya')
+        print('Nodo "usdEditAsMaya" eliminado correctamente.')
+    else:
+        print('El nodo "usdEditAsMaya" no existe en la escena.')
+
+# Ejecutar la función
+delete_usd_edit_node()
