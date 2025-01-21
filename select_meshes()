@@ -1,0 +1,18 @@
+import maya.cmds as cmds
+
+def select_deformed_meshes():
+    # Lista todos los objetos en la escena
+    all_objects = cmds.ls(type='mesh')  # Filtramos solo objetos tipo "mesh"
+    
+    # Filtrar los que terminan con "_meshShapeDeformed"
+    deformed_meshes = [obj for obj in all_objects if obj.endswith("_meshShapeDeformed")]
+    
+    if deformed_meshes:
+        # Seleccionar los objetos filtrados
+        cmds.select(deformed_meshes)
+        print(f"Seleccionados los siguientes objetos: {deformed_meshes}")
+    else:
+        print("No se encontraron objetos que coincidan con el nombre *_meshShapeDeformed.")
+
+# Ejecutar la función
+select_deformed_meshes()
