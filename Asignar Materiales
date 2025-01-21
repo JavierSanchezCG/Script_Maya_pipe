@@ -1,0 +1,66 @@
+import maya.cmds as cmds
+
+def assign_material_to_geo_char_with_ui():
+    def apply_material(*args):
+        # Obtener la opción seleccionada del desplegable
+        selected_color = cmds.optionMenu(color_menu, query=True, value=True)
+        
+        # Construir el nombre del material según la selección
+        material_name = f"AllSetmat_character_{selected_color.lower()}"
+        
+        # Verificar que el material exista
+        if not cmds.objExists(material_name):
+            cmds.error(f"El material '{material_name}' no existe en la escena.")
+            return
+
+        # Verificar si el material tiene un shading group
+        shading_group = cmds.listConnections(material_name + ".outColor", type="shadingEngine")
+        if not shading_group:
+            # Crear un shading group si no existe
+            shading_group = cmds.sets(renderable=True, noSurfaceShader=True, empty=True, name=material_name + "SG")
+            cmds.connectAttr(material_name + ".outColor", shading_group + ".surfaceShader")
+            print(f"Se creó un shading group '{shading_group}' para el material '{material_name}'.")
+        else:
+            shading_group = shading_group[0]
+
+        # Buscar el grupo "geo_char"
+        if not cmds.objExists("geo_char"):
+            cmds.error("No se encontró el grupo 'geo_char' en la escena.")
+            return
+
+        # Obtener todos los objetos contenidos dentro de geo_char
+        geo_char_objects = cmds.listRelatives("geo_char", allDescendents=True, fullPath=True) or []
+        
+        # Filtrar los objetos que terminan con "_mesh"
+        target_meshes = [obj for obj in geo_char_objects if obj.endswith("_mesh")]
+
+        if not target_meshes:
+            print("No se encontraron objetos que terminen con '_mesh' dentro de 'geo_char'.")
+            return
+
+        # Asignar el material a los objetos filtrados
+        for mesh in target_meshes:
+            cmds.sets(mesh, edit=True, forceElement=shading_group)
+        
+        print(f"Material '{material_name}' asignado a los objetos: {target_meshes}")
+
+    # Crear la ventana
+    if cmds.window("assignMaterialUI", exists=True):
+        cmds.deleteUI("assignMaterialUI")
+
+    window = cmds.window("assignMaterialUI", title="Asignar Material", widthHeight=(300, 100))
+    cmds.columnLayout(adjustableColumn=True)
+
+    # Crear un menú desplegable con opciones de color
+    cmds.text(label="Selecciona el color del material:")
+    color_menu = cmds.optionMenu(label="Color")
+    for color in ["blue", "yellow", "green", "red", "pink"]:
+        cmds.menuItem(label=color)
+    
+    # Botón para aplicar el material
+    cmds.button(label="Asignar Material", command=apply_material)
+
+    cmds.showWindow(window)
+
+# Ejecutar la función para mostrar la ventana
+assign_material_to_geo_char_with_ui()
