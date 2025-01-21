@@ -1,0 +1,42 @@
+import maya.cmds as cmds
+
+# Función para verificar si un nodo pertenece a un archivo USD
+def is_from_usd(node):
+    # Verificar si el nodo es hijo de un nodo USD
+    parent = cmds.listRelatives(node, parent=True, fullPath=True)
+    if parent:
+        parent = parent[0]
+        # Verificar si el nodo padre es de tipo 'pxrUsdReference' o similar
+        if cmds.nodeType(parent) in ['pxrUsdReference', 'usdTransform']:
+            return True
+    return False
+
+# Función para eliminar nodos específicos
+def delete_specific_nodes():
+    # Lista de nodos a eliminar
+    nodes_to_check = ['camera1', 'camera1Shape', 'renderCam', 'renderCamShape']
+    
+    for node in nodes_to_check:
+        # Obtener todos los nodos con este nombre en la escena
+        nodes = cmds.ls(node, long=True) or []
+        
+        for n in nodes:
+            # Verificar si el nodo no proviene de un archivo USD
+            if not is_from_usd(n):
+                # Desbloquear el nodo si está bloqueado
+                try:
+                    cmds.lockNode(n, lock=False)
+                except RuntimeError:
+                    print(f'No se pudo desbloquear el nodo "{n}".')
+                
+                # Eliminar el nodo
+                try:
+                    cmds.delete(n)
+                    print(f'Nodo "{n}" eliminado correctamente.')
+                except RuntimeError as e:
+                    print(f'Error al eliminar el nodo "{n}": {e}')
+            else:
+                print(f'Nodo "{n}" pertenece a un archivo USD. No se eliminará.')
+
+# Ejecutar la función
+delete_specific_nodes()
