@@ -1,0 +1,25 @@
+import maya.cmds as cmds
+
+def clean_unused_reference_nodes():
+    # Obtener todos los nodos de referencia en la escena
+    reference_nodes = cmds.ls(type="reference")
+
+    # Iterar sobre cada nodo de referencia
+    for ref_node in reference_nodes:
+        # Verificar si el nodo está asociado a un archivo
+        try:
+            ref_file = cmds.referenceQuery(ref_node, filename=True)
+        except RuntimeError:
+            ref_file = None  # Si no está asociado, lanzará un error
+
+        # Si no hay archivo asociado, eliminar el nodo
+        if not ref_file:
+            print(f"Eliminando nodo de referencia no asociado: {ref_node}")
+            try:
+                cmds.lockNode(ref_node, lock=False)  # Desbloquear el nodo si está bloqueado
+                cmds.delete(ref_node)  # Eliminar el nodo
+            except Exception as e:
+                print(f"Error al eliminar {ref_node}: {e}")
+
+# Ejecutar la función
+clean_unused_reference_nodes()
