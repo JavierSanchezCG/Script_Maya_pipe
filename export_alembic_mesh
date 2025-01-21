@@ -1,0 +1,57 @@
+import maya.cmds as cmds
+import os
+
+def prepare_and_export_alembic(output_path, start_frame=1177, end_frame=1301):
+    # Seleccionar objetos "_meshShapeDeformed"
+    all_objects = cmds.ls(type="mesh", long=True)
+    deformed_meshes = [obj for obj in all_objects if obj.endswith("_meshShapeDeformed")]
+    
+    if not deformed_meshes:
+        cmds.error("No se encontraron objetos que coincidan con '_meshShapeDeformed'.")
+        return
+
+    # Seleccionar transform padres de los meshes
+    parents = list(set(cmds.listRelatives(deformed_meshes, parent=True, fullPath=True)))
+    if not parents:
+        cmds.error("No se encontraron padres válidos para los objetos seleccionados.")
+        return
+
+    # Validar que hay al menos un nodo válido
+    valid_parents = [
+        parent for parent in parents
+        if not cmds.referenceQuery(parent, isNodeReferenced=True) or cmds.lockNode(parent, query=True, lock=False)
+    ]
+
+    if not valid_parents:
+        cmds.error("No hay nodos válidos para exportar. Todos los nodos están bloqueados o referenciados.")
+        return
+
+    # Validar que el directorio de salida exista
+    output_dir = os.path.dirname(output_path)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)  # Crear el directorio si no existe
+
+    # Definir rango de tiempo
+    cmds.playbackOptions(min=start_frame, max=end_frame)
+
+    # Crear los roots para la exportación de Alembic
+    roots = " ".join([f"-root {parent}" for parent in valid_parents])
+
+    # Ejecutar exportación Alembic
+    try:
+        cmds.AbcExport(
+            j=(
+                f"-frameRange {start_frame} {end_frame} "
+                f"-stripNamespaces -uvWrite -worldSpace "
+                f"-writeVisibility -dataFormat ogawa "
+                f"{roots} "
+                f"-file \"{output_path}\""
+            )
+        )
+        print(f"Archivo Alembic exportado correctamente: {output_path}")
+    except Exception as e:
+        cmds.error(f"Error durante la exportación Alembic: {e}")
+
+# Configura el path de salida y ejecuta la función
+output_path = "G:/Unidades compartidas/Prism2/Prism2/the_impossible_crime/03_Production/Shots/sq_010/sh_052/Export/abc/characters_javi_v003.abc"
+prepare_and_export_alembic(output_path, start_frame=1177, end_frame=1301)
