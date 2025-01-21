@@ -1,0 +1,27 @@
+import maya.cmds as cmds
+
+def remove_all_namespaces():
+    # Obtener una lista de todos los namespaces en la escena
+    namespaces = cmds.namespaceInfo(lon=True, recurse=True)
+    
+    # Excluir los namespaces por defecto
+    default_namespaces = ['UI', 'shared']
+    
+    if namespaces:
+        for ns in namespaces:
+            if ns not in default_namespaces:
+                try:
+                    # Mover todos los objetos del namespace actual al namespace raíz
+                    cmds.namespace(setNamespace=":")
+                    cmds.namespace(force=True, moveNamespace=(ns, ":"))
+                    
+                    # Eliminar el namespace vacío
+                    cmds.namespace(removeNamespace=ns, force=True)
+                    print(f"Namespace eliminado: {ns}")
+                except Exception as e:
+                    print(f"No se pudo eliminar el namespace '{ns}': {e}")
+    else:
+        print("No hay namespaces personalizados en la escena.")
+
+# Ejecutar la función
+remove_all_namespaces()
