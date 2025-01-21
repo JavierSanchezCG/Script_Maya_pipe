@@ -1,0 +1,58 @@
+import maya.cmds as cmds
+import os
+
+# Definir las rutas de origen y destino
+old_path = r'G:\Unidades compartidas\Prism2\Prism2\the_impossible_crime\03_Production\Textures'
+new_path = r'G:\unidades compartidas\Prism2\Prism2\the_impossible_crime\sourceimages'
+
+# Función para cambiar las rutas de las texturas
+def repath_textures_debug(old_path, new_path):
+    # Normalizar las rutas
+    old_path = old_path.replace("\\", "/")
+    new_path = new_path.replace("\\", "/")
+
+    # Obtener todos los nodos de textura en la escena
+    texture_nodes = cmds.ls(type=['file', 'aiImage'])
+    print(f'Nodos de textura encontrados: {texture_nodes}')
+    
+    if not texture_nodes:
+        cmds.warning('No se encontraron nodos de textura en la escena.')
+        return
+
+    textures_updated = 0
+
+    for node in texture_nodes:
+        # Detectar el atributo que contiene la ruta
+        texture_attr = None
+        if cmds.objExists(f'{node}.fileTextureName'):
+            texture_attr = 'fileTextureName'
+        elif cmds.objExists(f'{node}.aiImagePath'):
+            texture_attr = 'aiImagePath'
+        
+        if texture_attr:
+            # Obtener y normalizar la ruta de la textura
+            texture_path = cmds.getAttr(f'{node}.{texture_attr}').replace("\\", "/")
+            print(f'Nodo: {node}, Ruta encontrada: {texture_path}')
+
+            # Si la ruta contiene old_path, reemplazarla
+            if old_path in texture_path:
+                updated_path = texture_path.replace(old_path, new_path)
+                cmds.setAttr(f'{node}.{texture_attr}', updated_path, type='string')
+                print(f'[{node}] Ruta actualizada: {texture_path} -> {updated_path}')
+                textures_updated += 1
+            else:
+                print(f'[{node}] No coincide con old_path.')
+        else:
+            # Si el nodo no tiene los atributos esperados, imprimir todos sus atributos
+            print(f'Nodo {node} no tiene un atributo de textura esperado. Atributos disponibles:')
+            attributes = cmds.listAttr(node)
+            print(attributes)
+    
+    # Reportar resultados
+    if textures_updated > 0:
+        print(f'\n{textures_updated} texturas actualizadas exitosamente.')
+    else:
+        print('No se encontraron texturas para actualizar.')
+
+# Ejecutar la función
+repath_textures_debug(old_path, new_path)
