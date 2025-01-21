@@ -1,0 +1,55 @@
+import maya.cmds as cmds
+
+# Función para obtener los frames backeados de renderCam dentro de usdEditAsMaya
+def set_render_range_from_usd_camera():
+    parent_set = 'usdEditAsMaya'
+    camera_name = 'renderCam'
+
+    # Verificar si el set usdEditAsMaya y la cámara existen
+    if not cmds.objExists(parent_set):
+        cmds.error(f'El set "{parent_set}" no existe en la escena.')
+        return
+    
+    # Buscar la cámara dentro del set usdEditAsMaya
+    members = cmds.sets(parent_set, query=True) or []
+    render_camera = None
+    for member in members:
+        if member.endswith(camera_name):
+            render_camera = member
+            break
+    
+    if not render_camera:
+        cmds.error(f'La cámara "{camera_name}" no se encontró dentro del set "{parent_set}".')
+        return
+
+    # Obtener las curvas de animación conectadas a la cámara
+    animation_curves = cmds.listConnections(render_camera, type='animCurve') or []
+    if not animation_curves:
+        cmds.error(f'La cámara "{render_camera}" no tiene animación.')
+        return
+
+    # Obtener los frames clave de las curvas de animación
+    keyframes = []
+    for anim_curve in animation_curves:
+        keyframes += cmds.keyframe(anim_curve, query=True) or []
+
+    # Determinar el primer y último frame animado
+    if not keyframes:
+        cmds.error(f'No se encontraron keyframes en la cámara "{render_camera}".')
+        return
+
+    start_frame = int(min(keyframes))
+    end_frame = int(max(keyframes))
+
+    # Configurar los valores en los ajustes de render
+    cmds.setAttr('defaultRenderGlobals.startFrame', start_frame)
+    cmds.setAttr('defaultRenderGlobals.endFrame', end_frame)
+
+    # También configurar la línea de tiempo para mayor comodidad
+    cmds.playbackOptions(edit=True, minTime=start_frame, maxTime=end_frame)
+    cmds.playbackOptions(edit=True, animationStartTime=start_frame, animationEndTime=end_frame)
+
+    print(f'Rango de render configurado: Start Frame = {start_frame}, End Frame = {end_frame}')
+
+# Ejecutar la función
+set_render_range_from_usd_camera()
