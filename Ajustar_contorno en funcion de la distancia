@@ -1,0 +1,73 @@
+
+import maya.cmds as cmds
+import math
+
+def adjust_contour_width():
+    # Buscar el grupo "geo_char"
+    if not cmds.objExists("geo_char"):
+        cmds.error("No se encontró el grupo 'geo_char' en la escena.")
+        return
+
+    # Obtener todos los objetos contenidos dentro de geo_char
+    geo_char_objects = cmds.listRelatives("geo_char", allDescendents=True, fullPath=True) or []
+    
+    # Filtrar los objetos que terminan con "_mesh"
+    target_meshes = [obj for obj in geo_char_objects if obj.endswith("_mesh")]
+
+    if not target_meshes:
+        print("No se encontraron objetos que terminen con '_mesh' dentro de 'geo_char'.")
+        return
+
+    # Tomar el último objeto de la lista
+    last_mesh = target_meshes[-1]
+
+    # Obtener la posición del último objeto
+    last_mesh_position = cmds.xform(last_mesh, query=True, worldSpace=True, translation=True)
+
+    # Verificar si la cámara "renderCam" existe
+    if not cmds.objExists("renderCam"):
+        cmds.error("No se encontró la cámara 'renderCam' en la escena.")
+        return
+
+    # Obtener la posición de la cámara "renderCam"
+    camera_position = cmds.xform("renderCam", query=True, worldSpace=True, translation=True)
+
+    # Calcular la distancia entre la cámara y el objeto
+    distance = math.sqrt(
+        (last_mesh_position[0] - camera_position[0]) ** 2 +
+        (last_mesh_position[1] - camera_position[1]) ** 2 +
+        (last_mesh_position[2] - camera_position[2]) ** 2
+    )
+
+    print(f"La distancia desde la cámara 'renderCam' al objeto '{last_mesh}' es: {distance:.2f} unidades.")
+
+    # Ajustar el Width del contorno en función de la distancia
+    # Normalizar la distancia a un rango razonable para el Width
+    if distance > 1000:
+        new_width = 5  # Valores muy lejanos mantienen un contorno mínimo
+    elif distance < 10:
+        new_width = 13  # Valores cercanos mantienen el contorno máximo
+    else:
+        new_width = 13 - ((distance - 10) / 990 * (13 - 5))  # Escalar entre 5 y 13
+
+    # Limitar el Width al rango [5, 13]
+    new_width = max(5, min(13, new_width))
+
+    # Asegurarse de que el filtro de contorno esté activado
+    contour_filter = None
+    filters = cmds.ls(type="aiAOVFilter")
+    for filt in filters:
+        if cmds.getAttr(f"{filt}.aiTranslator") == "contour":
+            contour_filter = filt
+            break
+
+    if not contour_filter:
+        cmds.error("No se encontró un filtro de contorno (contour) en la escena. Por favor, crea uno.")
+        return
+
+    # Cambiar el valor del Width en el filtro de contorno
+    cmds.setAttr(f"{contour_filter}.width", new_width)
+    print(f"Se ha ajustado el Width del contorno a: {new_width:.2f}")
+
+# Ejecutar la función
+adjust_contour_width()
