@@ -1,0 +1,38 @@
+import maya.cmds as cmds
+
+def set_subdivision_level(group_name, subdivision_level=3):
+    # Verificar si el grupo existe
+    if not cmds.objExists(group_name):
+        cmds.error(f"No se encontró el grupo '{group_name}' en la escena.")
+        return
+
+    # Obtener todos los objetos contenidos dentro del grupo
+    objects_in_group = cmds.listRelatives(group_name, allDescendents=True, fullPath=True) or []
+
+    # Filtrar sólo los objetos de tipo "mesh"
+    meshes = [obj for obj in objects_in_group if cmds.nodeType(obj) == "mesh"]
+
+    if not meshes:
+        print(f"No se encontraron objetos de tipo 'mesh' dentro del grupo '{group_name}'.")
+        return
+
+    # Configurar subdivisión para cada mesh
+    for mesh in meshes:
+        # Asegurarse de que el atributo subdiv_type existe
+        if not cmds.objExists(f"{mesh}.aiSubdivType"):
+            cmds.addAttr(mesh, longName="aiSubdivType", attributeType="enum", enumName="none:catclark:linear")
+            cmds.setAttr(f"{mesh}.aiSubdivType", keyable=True)
+
+        # Asegurarse de que el atributo subdiv_iterations existe
+        if not cmds.objExists(f"{mesh}.aiSubdivIterations"):
+            cmds.addAttr(mesh, longName="aiSubdivIterations", attributeType="short", minValue=0)
+            cmds.setAttr(f"{mesh}.aiSubdivIterations", keyable=True)
+
+        # Configurar subdivisión tipo "catclark" y nivel de subdivisión
+        cmds.setAttr(f"{mesh}.aiSubdivType", 1)  # 1 = catclark
+        cmds.setAttr(f"{mesh}.aiSubdivIterations", subdivision_level)
+
+    print(f"Se configuró subdivisión de nivel {subdivision_level} para los siguientes objetos: {meshes}")
+
+# Ejecutar la función
+set_subdivision_level("geo_char", subdivision_level=3)
